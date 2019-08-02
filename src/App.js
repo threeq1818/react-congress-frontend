@@ -12,7 +12,8 @@ import store from './store';
 // including creating additional folders/files and organizing your
 // components however you would like.
 
-const theme = createMuiTheme({});
+const theme = createMuiTheme({
+});
 
 class App extends Component {
   componentWillMount() {
@@ -41,7 +42,7 @@ class App extends Component {
             <Route exact path="/" component={Members} />
           </Router>
         </Provider>
-      </ThemeProvider>
+      </ThemeProvider >
     );
   }
 }

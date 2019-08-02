@@ -1,3 +1,4 @@
+// components/Banner.js
 import React, { Component } from 'react'
 import logo from '../logo.png';
 
