@@ -43,6 +43,7 @@ import { FormLabel } from '@material-ui/core';
 import TwoValueSlider from './TwoValueSlider';
 import CustomTablePagination from './CustomTablePagination';
 import { callbackify } from 'util';
+import { borderBottom } from '@material-ui/system';
 
 const styles = theme => ({
   root: {
@@ -176,7 +177,19 @@ const styles = theme => ({
   congress_row: {
     position: 'relative'
   },
+  filter_button_listitemtext: {
+    color: '#000',
+    marginLeft: '-12px'
+  },
   congress_record: {
+    paddingTop: 0,
+    paddingBottom: 0,
+    'align-items': 'center',
+    borderBottom: '1px solid #dddddd'
+  },
+  congress_record_checkbox: {
+    paddingTop: 0,
+    paddingBottom: 0,
     'align-items': 'center'
   },
   filter_checkbox_label: {
@@ -226,15 +239,32 @@ class Members extends Component {
     this.state = {
       searchfield: 20,
       perpage: 10,
-      congress: 1,
+      congress: 0,
       chamber: 1,
-      party: 0,
-      yone: 0,
-      gender: 0,
+      party: 1,
+      yone: 1,
+      gender: 1,
+      congressChecked: [],
+      chamberChecked: [],
     }
 
     this.handleChange = this.handleChange.bind(this);
     this.handleClickListExpand = this.handleClickListExpand.bind(this);
+    this.handleCongressToggle = this.handleCongressToggle.bind(this);
+    this.handleChamberToggle = this.handleChamberToggle.bind(this);
+  }
+
+  handleCongressToggle = value => (event) => {
+    const currentIndex = this.state.congressChecked.indexOf(value);
+    const newChecked = [...this.state.congressChecked];
+
+    if (currentIndex === -1) {
+      newChecked.push(value);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+
+    this.setState({ congressChecked: newChecked });
   }
 
   handleClickListExpand = sname => (event) => {
@@ -416,63 +446,69 @@ class Members extends Component {
                 <Grid className={classes.searchColumnNav} column>
                   <List
                     component="nav"
-                    aria-labelledby=""
-                    //             subheader={
-                    //               <ListSubheader component="div" id="nested-list-subheader">
-                    //                 Nested List Items
-                    // </ListSubheader>
-                    //             }
-                    // className={classes.root}
+                    aria-labelledby="filter list"
+                    disablePadding
+                  //             subheader={
+                  //               <ListSubheader component="div" id="nested-list-subheader">
+                  //                 Nested List Items
+                  // </ListSubheader>
+                  //             }
+                  // className={classes.root}
                   >
-                    <ListItem button onClick={this.handleClickListExpand('congress')}>
-                      <ListItemText primary="Congress" />
+                    <ListItem button onClick={this.handleClickListExpand('congress')} aria-labelledby="congress listitem button" >
+                      <ListItemText secondary="Congress" aria-labelledby="filter congress-button listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />
                       {this.state.congress ? <ExpandLess /> : <ExpandMore />}
                     </ListItem>
                     <Collapse in={this.state.congress} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        <ListItem dense button
-                          // key={value} role={undefined} 
-                          // onClick={handleToggle(value)}
-                          className={classes.congress_record}
-                        >
-                          {/* <ListItemIcon> */}
-                          <Checkbox
-                            edge="start"
-                            // checked={checked.indexOf(value) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                          // inputProps={{ 'aria-labelledby': labelId }}
-                          />
-                          {/* </ListItemIcon> */}
-                          <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} />
-                        </ListItem>
+                        {[...Array(36)].map((_, index) => (
+                          <ListItem button
+                            key={116 - index} role={undefined}
+                            onClick={this.handleCongressToggle(116 - index)}
+                            className={classes.congress_record}
+                          >
+                            <Checkbox
+                              edge="start"
+                              checked={this.state.congressChecked.includes(116 - index) !== false}
+                              tabIndex={-1}
+                              className={classes.congress_record_checkbox}
+                            // disableRipple
+                            // inputProps={{ 'aria-labelledby': labelId }}
+                            />
+                            {/* </ListItemIcon> */}
+                            <ListItemText id={index} primary={`${116 - index} (${2019 - index * 2}-${2020 - index * 2})`} classes={{ primary: classes.filter_checkbox_label }} />
+                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                          </ListItem>
+                        ))}
                       </List>
                     </Collapse>
 
                     <ListItem button onClick={this.handleClickListExpand('chamber')}>
-                      <ListItemText primary="Chamber" />
+                      <ListItemText secondary="Chamber" aria-labelledby="filter chamber-button  listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />
                       {this.state.chamber ? <ExpandLess /> : <ExpandMore />}
                     </ListItem>
                     <Collapse in={this.state.chamber} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        <ListItem dense button
-                          // key={value} role={undefined} 
-                          // onClick={handleToggle(value)}
-                          className={classes.congress_record}
-                        >
-                          {/* <ListItemIcon> */}
-                          <Checkbox
-                            edge="start"
-                            // checked={checked.indexOf(value) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                          // inputProps={{ 'aria-labelledby': labelId }}
-                          />
-                          {/* </ListItemIcon> */}
-                          <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} />
-                        </ListItem>
+                        {['Senate', 'House'].map((value, index) => (
+                          <ListItem button
+                            key={index} role={undefined}
+                            onClick={this.handleChamberToggle(index)}
+                            className={classes.congress_record}
+                          >
+                            {/* <ListItemIcon> */}
+                            <Checkbox
+                              edge="start"
+                              checked={this.state.chamberChecked.includes(value) !== false}
+                              tabIndex={-1}
+                              className={classes.congress_record_checkbox}
+                            // disableRipple
+                            // inputProps={{ 'aria-labelledby': labelId }}
+                            />
+                            {/* </ListItemIcon> */}
+                            <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
+                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                          </ListItem>
+                        ))}
                       </List>
                     </Collapse>
 
@@ -497,7 +533,7 @@ class Members extends Component {
                           />
                           {/* </ListItemIcon> */}
                           <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} />
+                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
                         </ListItem>
                       </List>
                     </Collapse>
@@ -523,7 +559,7 @@ class Members extends Component {
                           />
                           {/* </ListItemIcon> */}
                           <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} />
+                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
                         </ListItem>
                       </List>
                     </Collapse>
@@ -549,62 +585,11 @@ class Members extends Component {
                           />
                           {/* </ListItemIcon> */}
                           <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} />
+                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
                         </ListItem>
                       </List>
                     </Collapse>
                   </List>
-                  {/* <Paper>
-                    <Divider className={classes.strongDivider} />
-                    <strong>Congress</strong>
-                    <FormGroup column className={classes.congress_row}>
-                      <FormGroup row className={classes.congress_record}>
-                        <FormControlLabel className={classes.congress_checkbox}
-                          control={
-                            <Checkbox checked={'checkedA'} value="checkedA" />
-                          }
-                          label={<FormLabel className={classes.congress_checkbox}>116 (2019-2020)</FormLabel>}
-                        />
-                        <FormLabel className={classes.congress_filtercount}>aaaa</FormLabel>
-                      </FormGroup>
-
-                      <FormGroup row className={classes.congress_record}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox checked={'checkedA'} value="checkedA" />
-                          }
-                          label={<FormLabel className={classes.congress_checkbox}>115 (2017-2018)</FormLabel>}
-                        />
-                        <FormLabel className={classes.congress_filtercount}>bbbb</FormLabel>
-                      </FormGroup>
-                    </FormGroup>
-                  </Paper>
-
-                  <Paper>
-                    <Divider className={classes.strongDivider} />
-                    <strong>Chamber</strong>
-                    <FormGroup column className={classes.congress_row}>
-                      <FormGroup row className={classes.congress_record}>
-                        <FormControlLabel className={classes.congress_checkbox}
-                          control={
-                            <Checkbox checked={'checkedA'} value="checkedA" />
-                          }
-                          label={<FormLabel className={classes.congress_checkbox}>116 (2019-2020)</FormLabel>}
-                        />
-                        <FormLabel className={classes.congress_filtercount}>aaaa</FormLabel>
-                      </FormGroup>
-
-                      <FormGroup row className={classes.congress_record}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox checked={'checkedA'} value="checkedA" />
-                          }
-                          label={<FormLabel className={classes.congress_checkbox}>115 (2017-2018)</FormLabel>}
-                        />
-                        <FormLabel className={classes.congress_filtercount}>bbbb</FormLabel>
-                      </FormGroup>
-                    </FormGroup>
-                  </Paper> */}
                 </Grid>
               </Grid>
             </Grid>
