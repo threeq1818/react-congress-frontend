@@ -6,7 +6,7 @@ import { compose } from 'recompose';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import CssBaseline from '@material-ui/core/CssBaseline';
-
+import PropTypes from 'prop-types';
 import Container from '@material-ui/core/Container';
 import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
@@ -37,6 +37,7 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Typography from '@material-ui/core/Typography';
 import ButtonBase from '@material-ui/core/ButtonBase';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { searchMembers } from '../actions/members';
 import { FormLabel } from '@material-ui/core';
@@ -50,6 +51,16 @@ const styles = theme => ({
     'font-size': '12px',
     width: '100%',
     'background-color': '#f7f7f7'
+  },
+  loading: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    background: '#0005',
+    zIndex: 999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   container: {
     maxWidth: 'xl'
@@ -181,13 +192,13 @@ const styles = theme => ({
     color: '#000',
     marginLeft: '-12px'
   },
-  congress_record: {
+  filter_collapse_list_listitem: {
     paddingTop: 0,
     paddingBottom: 0,
     'align-items': 'center',
     borderBottom: '1px solid #dddddd'
   },
-  congress_record_checkbox: {
+  filter_collapse_list_checkbox: {
     paddingTop: 0,
     paddingBottom: 0,
     'align-items': 'center'
@@ -237,21 +248,60 @@ class Members extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      searchfield: 20,
+      // isLoading: false,
+      searchvalue: '',
       perpage: 10,
-      congress: 0,
-      chamber: 1,
-      party: 1,
-      yone: 1,
-      gender: 1,
-      congressChecked: [],
-      chamberChecked: [],
+      congress: false,
+      chamber: true,
+      party: true,
+      yone: true,
+      gender: true,
+      congressChecked: [116],
+      chamberChecked: ['Senate'],
+      partyChecked: [],
+      yoneChecked: [],
+      genderChecked: [],
     }
+
+    this.localSearchValue = '';
+    this.onSearch = this.onSearch.bind(this);
+    this.onChangeSearchValue = this.onChangeSearchValue.bind(this);
 
     this.handleChange = this.handleChange.bind(this);
     this.handleClickListExpand = this.handleClickListExpand.bind(this);
     this.handleCongressToggle = this.handleCongressToggle.bind(this);
     this.handleChamberToggle = this.handleChamberToggle.bind(this);
+    this.handlePartyToggle = this.handlePartyToggle.bind(this);
+    this.handleYONEToggle = this.handleYONEToggle.bind(this);
+    this.handleGenderToggle = this.handleGenderToggle.bind(this);
+
+  }
+
+  componentDidMount() {
+  }
+
+  componentDidUpdate(prevProps) {
+  }
+
+  onSearch(event) {
+    // debugger
+    this.setState({ searchvalue: this.localSearchValue });
+    let data = {};
+    data.sessions = this.state.congressChecked;
+    data.chamber = this.state.chamberChecked;
+    data.searchValue = this.localSearchValue;
+    data.party = this.state.partyChecked;
+    data.nextElection = this.state.nextElection;
+    data.gender = this.genderChecked;
+    data.total_votes = [];
+    data.votes_party_percentage = {};
+    this.props.searchMembers(data);
+  }
+
+  onChangeSearchValue(event) {
+    // debugger
+    if (event.currentTarget)
+      this.localSearchValue = event.currentTarget.value;
   }
 
   handleCongressToggle = value => (event) => {
@@ -263,14 +313,62 @@ class Members extends Component {
     } else {
       newChecked.splice(currentIndex, 1);
     }
-
     this.setState({ congressChecked: newChecked });
+  }
+
+  handleChamberToggle = value => (event) => {
+    const currentIndex = this.state.chamberChecked.indexOf(value);
+    const newChecked = [...this.state.chamberChecked];
+
+    if (currentIndex === -1) {
+      newChecked.push(value);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+    this.setState({ chamberChecked: newChecked });
+  }
+
+  handlePartyToggle = value => (event) => {
+    const currentIndex = this.state.partyChecked.indexOf(value);
+    const newChecked = [...this.state.partyChecked];
+
+    if (currentIndex === -1) {
+      newChecked.push(value);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+    this.setState({ partyChecked: newChecked });
+  }
+
+  handleYONEToggle = value => (event) => {
+    const currentIndex = this.state.yoneChecked.indexOf(value);
+    const newChecked = [...this.state.yoneChecked];
+
+    if (currentIndex === -1) {
+      newChecked.push(value);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+    this.setState({ yoneChecked: newChecked });
+  }
+
+  handleGenderToggle = value => (event) => {
+    const currentIndex = this.state.genderChecked.indexOf(value);
+    const newChecked = [...this.state.genderChecked];
+
+    if (currentIndex === -1) {
+      newChecked.push(value);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+    this.setState({ genderChecked: newChecked });
   }
 
   handleClickListExpand = sname => (event) => {
     this.setState({ [sname]: !this.state[sname] });
   }
 
+  //list expand 
   handleChange = name => (event) => {
     this.setState({ [name]: event.target.value });
   }
@@ -279,6 +377,11 @@ class Members extends Component {
     const { classes } = this.props;
     return (
       <div className={classes.root}>
+        {this.props.members.loading ? (
+          <div className={classes.loading}>
+            <CircularProgress color="secondary" size={60} thickness={10} />
+          </div>
+        ) : null}
         <Container maxWidth="xl">
           {/* <CssBaseline /> */}
           <Paper className={classes.searchPaper}>
@@ -298,16 +401,18 @@ class Members extends Component {
                 className={classes.searchInput}
                 placeholder="Input Name"
                 inputProps={{ 'aria-label': 'Search' }}
+                onChange={this.onChangeSearchValue}
+              // value={this.localSearchValue}
               />
             </div>
-            <IconButton className={classes.iconButton} aria-label="search">
+            <IconButton className={classes.iconButton} aria-label="search" onClick={this.onSearch}>
               <SearchIcon />
             </IconButton>
             {/* </form> */}
           </Paper>
           <Paper className={classes.resultPaper}>
             <Grid container className={classes.searchResultsWrapper}>
-              <Grid className={classes.searchTune} item row>
+              <Grid className={classes.searchTune} item row='true'>
                 {/* <Paper> */}
                 <Button variant="outlined" color="secondary" className={classes.button}>
                   Hide Filters
@@ -352,7 +457,7 @@ class Members extends Component {
                 <Grid container className={classes.searchColumnMain}>
                   <Grid className={classes.searchResultList}>
                     <Paper className={classes.paper}>
-                      <Grid container gutterBottom className={classes.record}>
+                      <Grid container gutterbottom='true' className={classes.record}>
                         <Grid item>
                           <Typography variant="subtitle1">
                             1. Senator Full Name
@@ -443,7 +548,7 @@ class Members extends Component {
                     />
                   </Grid>
                 </Grid>
-                <Grid className={classes.searchColumnNav} column>
+                <Grid className={classes.searchColumnNav} column='true'>
                   <List
                     component="nav"
                     aria-labelledby="filter list"
@@ -465,13 +570,13 @@ class Members extends Component {
                           <ListItem button
                             key={116 - index} role={undefined}
                             onClick={this.handleCongressToggle(116 - index)}
-                            className={classes.congress_record}
+                            className={classes.filter_collapse_list_listitem}
                           >
                             <Checkbox
                               edge="start"
                               checked={this.state.congressChecked.includes(116 - index) !== false}
                               tabIndex={-1}
-                              className={classes.congress_record_checkbox}
+                              className={classes.filter_collapse_list_checkbox}
                             // disableRipple
                             // inputProps={{ 'aria-labelledby': labelId }}
                             />
@@ -491,16 +596,16 @@ class Members extends Component {
                       <List component="div" disablePadding>
                         {['Senate', 'House'].map((value, index) => (
                           <ListItem button
-                            key={index} role={undefined}
-                            onClick={this.handleChamberToggle(index)}
-                            className={classes.congress_record}
+                            key={value} role={undefined}
+                            onClick={this.handleChamberToggle(value)}
+                            className={classes.filter_collapse_list_listitem}
                           >
                             {/* <ListItemIcon> */}
                             <Checkbox
                               edge="start"
                               checked={this.state.chamberChecked.includes(value) !== false}
                               tabIndex={-1}
-                              className={classes.congress_record_checkbox}
+                              className={classes.filter_collapse_list_checkbox}
                             // disableRipple
                             // inputProps={{ 'aria-labelledby': labelId }}
                             />
@@ -513,80 +618,89 @@ class Members extends Component {
                     </Collapse>
 
                     <ListItem button onClick={this.handleClickListExpand('party')}>
-                      <ListItemText primary="Party" />
+                      <ListItemText secondary="Party" aria-labelledby="filter chamber-button  listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />
                       {this.state.party ? <ExpandLess /> : <ExpandMore />}
                     </ListItem>
                     <Collapse in={this.state.party} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        <ListItem dense button
-                          // key={value} role={undefined} 
-                          // onClick={handleToggle(value)}
-                          className={classes.congress_record}
-                        >
-                          {/* <ListItemIcon> */}
-                          <Checkbox
-                            edge="start"
-                            // checked={checked.indexOf(value) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                          // inputProps={{ 'aria-labelledby': labelId }}
-                          />
-                          {/* </ListItemIcon> */}
-                          <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
-                        </ListItem>
+                        {['Democratic', 'Republican', 'Independent', 'Independent Democrat'].map((value, index) => (
+                          <ListItem button
+                            key={value} role={undefined}
+                            onClick={this.handlePartyToggle(value)}
+                            className={classes.filter_collapse_list_listitem}
+                          >
+                            {/* <ListItemIcon> */}
+                            <Checkbox
+                              edge="start"
+                              checked={this.state.partyChecked.includes(value) !== false}
+                              tabIndex={-1}
+                              className={classes.filter_collapse_list_checkbox}
+                            // disableRipple
+                            // inputProps={{ 'aria-labelledby': labelId }}
+                            />
+                            {/* </ListItemIcon> */}
+                            <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
+                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                          </ListItem>
+                        ))}
                       </List>
                     </Collapse>
 
                     <ListItem button onClick={this.handleClickListExpand('yone')}>
-                      <ListItemText primary="Year of next election" />
+                      <ListItemText secondary="Year of next election" aria-labelledby="filter chamber-button  listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />
                       {this.state.yone ? <ExpandLess /> : <ExpandMore />}
                     </ListItem>
                     <Collapse in={this.state.yone} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        <ListItem dense button
-                          // key={value} role={undefined} 
-                          // onClick={handleToggle(value)}
-                          className={classes.congress_record}
-                        >
-                          {/* <ListItemIcon> */}
-                          <Checkbox
-                            edge="start"
-                            // checked={checked.indexOf(value) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                          // inputProps={{ 'aria-labelledby': labelId }}
-                          />
-                          {/* </ListItemIcon> */}
-                          <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
-                        </ListItem>
+                        {[...Array(9)].map((value, index) => (
+                          <ListItem dense button
+                            key={2028 - index} role={undefined}
+                            onClick={this.handleYONEToggle(2028 - index)}
+                            className={classes.filter_collapse_list_listitem}
+                          >
+                            {/* <ListItemIcon> */}
+                            <Checkbox
+                              edge="start"
+                              checked={this.state.yoneChecked.includes(2028 - index) !== false}
+                              tabIndex={-1}
+                              className={classes.filter_collapse_list_checkbox}
+                            // disableRipple
+                            // inputProps={{ 'aria-labelledby': labelId }}
+                            />
+                            {/* </ListItemIcon> */}
+                            <ListItemText id={index} primary={2028 - index} classes={{ primary: classes.filter_checkbox_label }} />
+                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                          </ListItem>
+                        ))}
                       </List>
                     </Collapse>
 
                     <ListItem button onClick={this.handleClickListExpand('gender')}>
-                      <ListItemText primary="Gender" />
+                      <ListItemText secondary="Gender" aria-labelledby="filter chamber-button  listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />
                       {this.state.gender ? <ExpandLess /> : <ExpandMore />}
                     </ListItem>
                     <Collapse in={this.state.gender} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        <ListItem dense button
-                          // key={value} role={undefined} 
-                          // onClick={handleToggle(value)}
-                          className={classes.congress_record}
-                        >
-                          {/* <ListItemIcon> */}
-                          <Checkbox
-                            edge="start"
-                            // checked={checked.indexOf(value) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                          // inputProps={{ 'aria-labelledby': labelId }}
-                          />
-                          {/* </ListItemIcon> */}
-                          <ListItemText id='1' primary={`116 (2019-2020)`} classes={{ primary: classes.filter_checkbox_label }} />
-                          {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
-                        </ListItem>
+                        {['Male', 'Female'].map((value, index) => (
+                          <ListItem dense button
+                            key={value} role={undefined}
+                            onClick={this.handleGenderToggle(value)}
+                            className={classes.filter_collapse_list_listitem}
+                          >
+                            {/* <ListItemIcon> */}
+                            <Checkbox
+                              edge="start"
+                              checked={this.state.genderChecked.includes(value) !== false}
+                              tabIndex={-1}
+                              className={classes.filter_collapse_list_checkbox}
+                            // disableRipple
+                            // inputProps={{ 'aria-labelledby': labelId }}
+                            />
+                            {/* </ListItemIcon> */}
+                            <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
+                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                          </ListItem>
+                        ))}
                       </List>
                     </Collapse>
                   </List>
@@ -604,12 +718,12 @@ class Members extends Component {
 Members.propTypes = {
   // members: PropTypes.array.isRequired,
   // errors: PropTypes.any.isRequired,
+  classes: PropTypes.object
 }
 
 const mapStateToProps = (state) => {
   return {
-    members: state.members, //[]
-    errors: state.errors
+    members: state.members
   }
 }
 

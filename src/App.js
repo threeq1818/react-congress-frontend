@@ -29,6 +29,7 @@ class App extends Component {
     //   .then((res) => res.json())
     //   .then((json) => json.results[0].members)
     //   .then((members) => {
+    //     console.log(members);
     //     // array of congressperson JSON objects
     //   })
   }

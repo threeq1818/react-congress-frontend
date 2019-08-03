@@ -4,6 +4,6 @@ import errorReducer from './errorReducer';
 import membersReducer from './membersReducer';
 
 export default combineReducers({
-    auth: membersReducer,
+    members: membersReducer,
     errors: errorReducer
 });
