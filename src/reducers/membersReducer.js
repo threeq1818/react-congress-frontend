@@ -6,7 +6,8 @@ import { isEmpty } from '../validation/is-empty';
 const initialState = {
   loading: false,
   error: null,
-  members: []
+  members: [],
+  count: 0
 }
 
 export default function (state = initialState, action) {
@@ -20,13 +21,15 @@ export default function (state = initialState, action) {
       return {
         loading: false,
         error: null,
-        members: action.payload
+        members: action.payload,
+        count: action.payload.length,
       }
     case READ_MEMBERS_FAIlED:
       return {
         loading: false,
         error: action.payload,
-        members: []
+        members: [],
+        count: 0,
       }
     default:
       return state;

@@ -38,6 +38,7 @@ import StarBorder from '@material-ui/icons/StarBorder';
 import Typography from '@material-ui/core/Typography';
 import ButtonBase from '@material-ui/core/ButtonBase';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Link from '@material-ui/core/Link';
 
 import { searchMembers } from '../actions/members';
 import { FormLabel } from '@material-ui/core';
@@ -45,6 +46,7 @@ import TwoValueSlider from './TwoValueSlider';
 import CustomTablePagination from './CustomTablePagination';
 import { callbackify } from 'util';
 import { borderBottom } from '@material-ui/system';
+import { isEmpty } from '../validation/is-empty';
 
 const styles = theme => ({
   root: {
@@ -250,7 +252,8 @@ class Members extends Component {
     this.state = {
       // isLoading: false,
       searchvalue: '',
-      perpage: 10,
+      rowsperpage: 25,
+      pagenum: 0,
       congress: false,
       chamber: true,
       party: true,
@@ -261,26 +264,43 @@ class Members extends Component {
       partyChecked: [],
       yoneChecked: [],
       genderChecked: [],
+      totalvotes: { low: 0, high: 1500 },
+      votepercent: { low: 0, high: 100 },
     }
 
     this.localSearchValue = '';
-    this.onSearch = this.onSearch.bind(this);
-    this.onChangeSearchValue = this.onChangeSearchValue.bind(this);
+    this.onSearch = this.onSearch.bind(this); // for search button click
+    this.onChangeSearchValue = this.onChangeSearchValue.bind(this); // for search value input change
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleClickListExpand = this.handleClickListExpand.bind(this);
-    this.handleCongressToggle = this.handleCongressToggle.bind(this);
-    this.handleChamberToggle = this.handleChamberToggle.bind(this);
-    this.handlePartyToggle = this.handlePartyToggle.bind(this);
-    this.handleYONEToggle = this.handleYONEToggle.bind(this);
-    this.handleGenderToggle = this.handleGenderToggle.bind(this);
+    this.onChangeCommitted = this.onChangeCommitted.bind(this); // for two slider bars
 
+    // this.handleChange = this.handleChange.bind(this);   // 
+    this.handleClickListExpand = this.handleClickListExpand.bind(this); //for filter list expand click
+    this.handleCongressToggle = this.handleCongressToggle.bind(this); //for congress checkbox
+    this.handleChamberToggle = this.handleChamberToggle.bind(this); //  ....
+    this.handlePartyToggle = this.handlePartyToggle.bind(this); // ....
+    this.handleYONEToggle = this.handleYONEToggle.bind(this); //  ....
+    this.handleGenderToggle = this.handleGenderToggle.bind(this); //  ....
+
+    this.handleChangePage = this.handleChangePage.bind(this); //tablepagination handler for change page num
+    this.handleChangeRowsPerPage = this.handleChangeRowsPerPage.bind(this); //tablepagination handler for chaange page num
   }
 
   componentDidMount() {
+    this.onSearch();
   }
 
   componentDidUpdate(prevProps) {
+
+  }
+
+  handleChangePage(event, newPage) {
+    this.setState({ pagenum: newPage });
+  }
+
+  handleChangeRowsPerPage(event) {
+    this.setState({ rowsperpage: +event.target.value });
+    this.setState({ pagenum: 0 });
   }
 
   onSearch(event) {
@@ -291,10 +311,10 @@ class Members extends Component {
     data.chamber = this.state.chamberChecked;
     data.searchValue = this.localSearchValue;
     data.party = this.state.partyChecked;
-    data.nextElection = this.state.nextElection;
-    data.gender = this.genderChecked;
-    data.total_votes = [];
-    data.votes_party_percentage = {};
+    data.yone = this.state.yoneChecked;
+    data.gender = this.state.genderChecked;
+    data.total_votes = this.state.totalvotes;
+    data.votes_party_percentage = this.state.votepercent;
     this.props.searchMembers(data);
   }
 
@@ -304,31 +324,48 @@ class Members extends Component {
       this.localSearchValue = event.currentTarget.value;
   }
 
+  onChangeCommitted = index => (event, values) => {
+    if (index === 1)
+      this.setState({ totalvotes: { low: values[0], high: values[1] } }, () => {
+        this.onSearch(null);
+      });
+    else if (index === 2)
+      this.setState({ votepercent: { low: values[0], high: values[1] } }, () => {
+        this.onSearch(null);
+      });
+  }
+
   handleCongressToggle = value => (event) => {
     const currentIndex = this.state.congressChecked.indexOf(value);
     const newChecked = [...this.state.congressChecked];
 
     if (currentIndex === -1) {
-      newChecked.push(value);
+      newChecked[0] = value;
+      // newChecked.push(value);
     } else {
       newChecked.splice(currentIndex, 1);
     }
-    this.setState({ congressChecked: newChecked });
+    this.setState({ congressChecked: newChecked }, () => {
+      this.onSearch(null);
+    });
   }
 
   handleChamberToggle = value => (event) => {
     const currentIndex = this.state.chamberChecked.indexOf(value);
     const newChecked = [...this.state.chamberChecked];
-
     if (currentIndex === -1) {
-      newChecked.push(value);
+      newChecked[0] = value;
+      // newChecked.push(value);
     } else {
       newChecked.splice(currentIndex, 1);
     }
-    this.setState({ chamberChecked: newChecked });
+    this.setState({ chamberChecked: newChecked }, () => {
+      this.onSearch(null);
+    });
   }
 
   handlePartyToggle = value => (event) => {
+    // debugger;
     const currentIndex = this.state.partyChecked.indexOf(value);
     const newChecked = [...this.state.partyChecked];
 
@@ -337,44 +374,65 @@ class Members extends Component {
     } else {
       newChecked.splice(currentIndex, 1);
     }
-    this.setState({ partyChecked: newChecked });
+    this.setState({ partyChecked: newChecked }, () => {
+      this.onSearch(null);
+    });
   }
 
   handleYONEToggle = value => (event) => {
     const currentIndex = this.state.yoneChecked.indexOf(value);
     const newChecked = [...this.state.yoneChecked];
 
+    // debugger
     if (currentIndex === -1) {
       newChecked.push(value);
     } else {
       newChecked.splice(currentIndex, 1);
     }
-    this.setState({ yoneChecked: newChecked });
+    this.setState({ yoneChecked: newChecked }, () => {
+      this.onSearch(null);
+    });
   }
 
   handleGenderToggle = value => (event) => {
     const currentIndex = this.state.genderChecked.indexOf(value);
     const newChecked = [...this.state.genderChecked];
-
+    // debugger
     if (currentIndex === -1) {
       newChecked.push(value);
     } else {
       newChecked.splice(currentIndex, 1);
     }
-    this.setState({ genderChecked: newChecked });
+    this.setState({ genderChecked: newChecked }, () => {
+      this.onSearch(null);
+    });
   }
 
   handleClickListExpand = sname => (event) => {
     this.setState({ [sname]: !this.state[sname] });
   }
 
-  //list expand 
-  handleChange = name => (event) => {
-    this.setState({ [name]: event.target.value });
+  makeAvatarString(index) {
+    let retName = '';
+    const record = this.props.members.members[this.state.pagenum * this.state.rowsperpage + index];
+    if (isEmpty(record.first_name) === false)
+      retName = record.first_name.substr(0, 1).toUpperCase();
+    if (isEmpty(record.middle_name) === false)
+      retName = retName + record.middle_name.substr(0, 1).toUpperCase();
+    if (isEmpty(record.last_name) === false)
+      retName = retName + record.last_name.substr(0, 1).toUpperCase();
+    return retName;
   }
 
   render() {
     const { classes } = this.props;
+    const resultRecords = !this.props.members.members === true ? [] : this.props.members.members;
+    // debugger
+    let showCounts = ((this.props.members.count - this.state.pagenum * this.state.rowsperpage) > this.state.rowsperpage) ?
+      this.state.rowsperpage : this.props.members.count - this.state.pagenum * this.state.rowsperpage;
+    if (!showCounts === true)
+      showCounts = 0;
+    console.log(showCounts);
     return (
       <div className={classes.root}>
         {this.props.members.loading ? (
@@ -383,7 +441,7 @@ class Members extends Component {
           </div>
         ) : null}
         <Container maxWidth="xl">
-          {/* <CssBaseline /> */}
+          <CssBaseline />
           <Paper className={classes.searchPaper}>
             {/* <form className={classes.form} onSubmit={this.handleSubmit} noValidate> */}
             {/* <Select
@@ -421,9 +479,11 @@ class Members extends Component {
                   <Typography variant="body2">total votes</Typography>
                   <TwoValueSlider
                     valueLabelDisplay="auto"
-                    // ThumbComponent={AirbnbThumbComponent}
                     aria-label="airbnb slider"
-                    defaultValue={[20, 40]}
+                    min={0}
+                    max={1500}
+                    defaultValue={[0, 1500]}
+                    onChangeCommitted={this.onChangeCommitted(1)}
                   />
                 </Grid>
                 <Grid className={classes.vote_percentage}>
@@ -432,24 +492,28 @@ class Members extends Component {
                     valueLabelDisplay="auto"
                     // ThumbComponent={AirbnbThumbComponent}
                     aria-label="airbnb slider"
-                    defaultValue={[20, 40]}
+                    min={0}
+                    max={100}
+                    defaultValue={[0, 100]}
+                    onChangeCommitted={this.onChangeCommitted(2)}
                   />
                 </Grid>
                 <TablePagination
+                  key={1}
                   className={classes.pagination}
-                  rowsPerPageOptions={[5, 10, 25]}
+                  rowsPerPageOptions={[25, 50, 100, 250]}
                   component="div"
-                  count={100}
-                  rowsPerPage={10}
-                  page={1}
+                  count={!this.props.members.count === true ? 0 : this.props.members.count}
+                  rowsPerPage={this.state.rowsperpage}
+                  page={this.state.pagenum}
                   backIconButtonProps={{
                     'aria-label': 'previous page',
                   }}
                   nextIconButtonProps={{
                     'aria-label': 'next page',
                   }}
-                // onChangePage={handleChangePage}
-                // onChangeRowsPerPage={handleChangeRowsPerPage}
+                  onChangePage={this.handleChangePage}
+                  onChangeRowsPerPage={this.handleChangeRowsPerPage}
                 />
                 {/* </Paper> */}
               </Grid>
@@ -457,93 +521,76 @@ class Members extends Component {
                 <Grid container className={classes.searchColumnMain}>
                   <Grid className={classes.searchResultList}>
                     <Paper className={classes.paper}>
-                      <Grid container gutterbottom='true' className={classes.record}>
-                        <Grid item>
-                          <Typography variant="subtitle1">
-                            1. Senator Full Name
-                          </Typography>
-                        </Grid>
-                        <Grid container>
-                          <Grid item>
-                            <ButtonBase className={classes.avatar}>
-                              QA
-                              {/* <img className={classes.img} alt="complex" src="/static/images/grid/complex.jpg" /> */}
-                            </ButtonBase>
-                          </Grid>
-                          <Grid item xs={12} sm container className={classes.recordgriditem} >
-                            <Grid item xs container direction="column">
-                              <Grid item xs>
-                                <Typography variant="body2">
-                                  <b>State:</b> South Dakota
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>Party:</b> Republic
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>District:</b> 1
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>Next Election:</b> 2020
-                                </Typography>
-                                <Typography variant="body2" style={{ cursor: 'pointer' }}>
-                                  <b>Office:</b>
-                                </Typography>
+                      {!this.props.members === true ? <></> :
+                        [...Array(showCounts)].map((_, index) => (
+                          // if (index >= this.state.pagenum * this.state.rowsperpage && index < (this.state.pagenum + 1) * this.state.rowsperpage && index < this.props.members.count) {
+                          < Grid container gutterbottom='true' className={classes.record} key={index}>
+                            <Grid item>
+                              <Typography variant="subtitle1">
+                                {this.state.pagenum * this.state.rowsperpage + index + 1}. {'  '}
+                                {resultRecords[this.state.pagenum * this.state.rowsperpage + index].first_name} {' '}
+                                {resultRecords[this.state.pagenum * this.state.rowsperpage + index].middle_name} {resultRecords[this.state.pagenum * this.state.rowsperpage + index].last_name}
+                              </Typography>
+                            </Grid>
+                            <Grid container>
+                              <Grid item>
+                                <ButtonBase className={classes.avatar}>
+                                  {this.makeAvatarString(index)}
+                                </ButtonBase>
+                              </Grid>
+                              <Grid item xs={12} sm container className={classes.recordgriditem} >
+                                <Grid item xs container direction="column">
+                                  <Grid item xs>
+                                    <Typography variant="body2">
+                                      <b>State:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].state}
+                                    </Typography>
+                                    {(!resultRecords[this.state.pagenum * this.state.rowsperpage + index].district === true) ? <></> :
+                                      <Typography variant="body2">
+                                        <b>District:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].district}
+                                      </Typography>
+                                    }
+                                    <Typography variant="body2">
+                                      <b>Party:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].party}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      <b>Next Election:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].next_election}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      <b>Twitter:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}</Link>
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      <b>Facebook:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}</Link>
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      <b>Youtube:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}</Link>
+                                    </Typography>
+                                    <Typography variant="body2" style={{ cursor: 'pointer' }}>
+                                      <b>Office:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].office}
+                                    </Typography>
+                                  </Grid>
+                                </Grid>
                               </Grid>
                             </Grid>
                           </Grid>
-                        </Grid>
-                      </Grid>
-                      <Grid container className={classes.record}>
-                        <Grid item>
-                          <Typography variant="subtitle1">
-                            1. Senator Full Name
-                          </Typography>
-                        </Grid>
-                        <Grid container>
-                          <Grid item>
-                            <ButtonBase className={classes.avatar}>
-                              QA
-                              {/* <img className={classes.img} alt="complex" src="/static/images/grid/complex.jpg" /> */}
-                            </ButtonBase>
-                          </Grid>
-                          <Grid item xs={12} sm container className={classes.recordgriditem} >
-                            <Grid item xs container direction="column">
-                              <Grid item xs>
-                                <Typography variant="body2">
-                                  <b>State:</b> South Dakota
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>Party:</b> Republic
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>District:</b> 1
-                                </Typography>
-                                <Typography variant="body2">
-                                  <b>Next Election:</b> 2020
-                                </Typography>
-                                <Typography variant="body2" style={{ cursor: 'pointer' }}>
-                                  <b>Office:</b>
-                                </Typography>
-                              </Grid>
-                            </Grid>
-                          </Grid>
-                        </Grid>
-                      </Grid>
+                          // }
+                        )
+                        )}
                     </Paper>
                   </Grid>
                   <Grid className={classes.navPageTop}>
                     <TablePagination
-                      rowsPerPageOptions={[5, 10, 25]}
+                      key={2}
+                      rowsPerPageOptions={[25, 50, 100, 250]}
                       colSpan={3}
-                      count={100}
-                      rowsPerPage={10}
-                      page={1}
+                      count={!this.props.members.count === true ? 0 : this.props.members.count}
+                      rowsPerPage={this.state.rowsperpage}
+                      page={this.state.pagenum}
                       SelectProps={{
                         inputProps: { 'aria-label': 'rows per page' },
                         native: true,
                       }}
-                      // onChangePage={handleChangePage}
-                      // onChangeRowsPerPage={handleChangeRowsPerPage}
+                      onChangePage={this.handleChangePage}
+                      onChangeRowsPerPage={this.handleChangeRowsPerPage}
                       ActionsComponent={CustomTablePagination}
                     />
                   </Grid>
@@ -577,8 +624,6 @@ class Members extends Component {
                               checked={this.state.congressChecked.includes(116 - index) !== false}
                               tabIndex={-1}
                               className={classes.filter_collapse_list_checkbox}
-                            // disableRipple
-                            // inputProps={{ 'aria-labelledby': labelId }}
                             />
                             {/* </ListItemIcon> */}
                             <ListItemText id={index} primary={`${116 - index} (${2019 - index * 2}-${2020 - index * 2})`} classes={{ primary: classes.filter_checkbox_label }} />
@@ -606,8 +651,6 @@ class Members extends Component {
                               checked={this.state.chamberChecked.includes(value) !== false}
                               tabIndex={-1}
                               className={classes.filter_collapse_list_checkbox}
-                            // disableRipple
-                            // inputProps={{ 'aria-labelledby': labelId }}
                             />
                             {/* </ListItemIcon> */}
                             <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
@@ -635,8 +678,6 @@ class Members extends Component {
                               checked={this.state.partyChecked.includes(value) !== false}
                               tabIndex={-1}
                               className={classes.filter_collapse_list_checkbox}
-                            // disableRipple
-                            // inputProps={{ 'aria-labelledby': labelId }}
                             />
                             {/* </ListItemIcon> */}
                             <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
@@ -664,8 +705,6 @@ class Members extends Component {
                               checked={this.state.yoneChecked.includes(2028 - index) !== false}
                               tabIndex={-1}
                               className={classes.filter_collapse_list_checkbox}
-                            // disableRipple
-                            // inputProps={{ 'aria-labelledby': labelId }}
                             />
                             {/* </ListItemIcon> */}
                             <ListItemText id={index} primary={2028 - index} classes={{ primary: classes.filter_checkbox_label }} />
@@ -693,8 +732,6 @@ class Members extends Component {
                               checked={this.state.genderChecked.includes(value) !== false}
                               tabIndex={-1}
                               className={classes.filter_collapse_list_checkbox}
-                            // disableRipple
-                            // inputProps={{ 'aria-labelledby': labelId }}
                             />
                             {/* </ListItemIcon> */}
                             <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
