@@ -1,12 +1,12 @@
 // actions/members.js
 
 import axios from 'axios';
-import { READ_MEMBERS_REQUEST, READ_MEMBERS_SUCCESS, READ_MEMBERS_FAIlED } from './types';
+import { READ_MEMBERS_REQUEST, READ_MEMBERS_SUCCESS, READ_MEMBERS_FAILED, READ_PROFILE_REQUEST, READ_PROFILE_SUCCESS, READ_PROFILE_FAILED } from './types';
 import { isEmpty } from '../validation/is-empty'
 
 const fetchMembers = (data) => {
   // debugger
-  const session = isEmpty(data.session) ? 115 : data.session; // 116th congressional session
+  const session = isEmpty(data.session) ? 116 : data.session; // 116th congressional session
   const chamber = isEmpty(data.chamber) ? 'senate' : data.chamber; // or 'house'
   // axios.defaults.headers.common['X-API-Key'] = 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr';
   return fetch(`https://api.propublica.org/congress/v1/${session}/${chamber}/members.json`, {
@@ -27,6 +27,41 @@ const fetchMembers = (data) => {
   //   payload: results
   // })
   // )
+}
+export const fetchProfile = (data) => dispatch => {
+  const member_id = isEmpty(data.member_id) ? 0 : data.member_id;
+
+  dispatch({
+    type: READ_PROFILE_REQUEST
+  });
+  fetch(`https://api.propublica.org/congress/v1/members/${member_id}.json`, {
+    headers: new Headers({
+      'X-API-Key': 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr',
+    }),
+  })
+    .then(res => {
+      return res.json();
+    })
+    .then(json => {
+      if (json.status.toUpperCase() === 'OK')
+        dispatch({
+          type: READ_PROFILE_SUCCESS,
+          payload: json.results[0]
+        });
+      else
+        dispatch({
+          type: READ_PROFILE_FAILED,
+          payload: json.errors.error
+        })
+    })
+    .catch(err => {
+      // debugger
+      dispatch({
+        type: READ_PROFILE_FAILED,
+        payload: err.message
+      })
+    })
+
 }
 
 export const searchMembers = (data) => dispatch => {
@@ -89,7 +124,7 @@ export const searchMembers = (data) => dispatch => {
     .catch(err => {
       // debugger
       dispatch({
-        type: READ_MEMBERS_FAIlED,
+        type: READ_MEMBERS_FAILED,
         payload: err.message
       })
     })
