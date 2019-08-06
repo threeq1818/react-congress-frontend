@@ -12,9 +12,6 @@ import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 
 import Button from '@material-ui/core/Button';
-import InputBase from '@material-ui/core/InputBase';
-import IconButton from '@material-ui/core/IconButton';
-import SearchIcon from '@material-ui/icons/Search';
 import TablePagination from '@material-ui/core/TablePagination';
 import Checkbox from '@material-ui/core/Checkbox';
 import List from '@material-ui/core/List';
@@ -31,7 +28,7 @@ import { searchMembers } from '../actions/members';
 import TwoValueSlider from './TwoValueSlider';
 import CustomTablePagination from './CustomTablePagination';
 import { isEmpty } from '../validation/is-empty';
-
+import CustomSearch from './CustomSearch';
 const styles = theme => ({
   root: {
     'font-size': '12px',
@@ -51,43 +48,17 @@ const styles = theme => ({
   container: {
     maxWidth: 'xl'
   },
-  searchPaper: {
-    'margin-bottom': 0,
-    'background-color': '#a6adbd',
-    padding: '15px 20px',
-    'border-radius': 0,
-    display: 'flex',
-    justifyContent: 'space-between'
-  },
-  form: {
-    width: '100%', // Fix IE 11 issue.
-    // marginTop: theme.spacing(1),
-  },
-  searchFormat: {
-    'font-size': 12,
-    'background-color': '#fff',
-    padding: 5,
-    border: '3px solid #1b4b6f',
-    width: '18%'
-  },
-  iconButton: {
-    color: '#fff',
-    'background-color': '#1b4b6f',
-    'border-radius': '0',
-    padding: 5,
-    border: '3px solid #1b4b6f',
-  },
-  searchInput: {
-    'font-size': 12,
-    'background-color': '#fff',
-    padding: 5,
-    border: '3px solid #1b4b6f',
-    width: '100%'
-  },
-  searchContainer: {
-    margin: 'auto',
-    width: 'calc(100% - 32px)' // 48px button + 32px margin
-  },
+  // form: {
+  //   width: '100%', // Fix IE 11 issue.
+  //   // marginTop: theme.spacing(1),
+  // // },
+  // searchFormat: {
+  //   'font-size': 12,
+  //   'background-color': '#fff',
+  //   padding: 5,
+  //   border: '3px solid #1b4b6f',
+  //   width: '18%'
+  // },
   resultPaper: {
     'margin-bottom': 0,
     // 'background-color': '#a6adbd',
@@ -100,17 +71,11 @@ const styles = theme => ({
     'box-sizing': 'border-box',
     'overflow': 'auto'
   },
-  searchResultsWrapper: {
-
-  },
-  // text: {
-  //   margin: '20px'
+  // formControl: {
+  //   borderRadius: 4,
+  //   border: '1px solid #ced4da',
+  //   'font-size': '12px'
   // },
-  formControl: {
-    borderRadius: 4,
-    border: '1px solid #ced4da',
-    'font-size': '12px'
-  },
   searchTune: {
     width: '100%',
     'align-items': 'center',
@@ -136,8 +101,6 @@ const styles = theme => ({
     'margin-left': '15%',
     display: 'flex',
     'flex-direction': 'row',
-  },
-  searchRow: {
   },
   searchColumnMain: {
     '-webkit-box-flex': 1,
@@ -247,8 +210,10 @@ class Members extends Component {
     const votes_high = isEmpty(params.get('votes_high')) ? 1500 : parseInt(params.get('votes_high'));
     const pct_low = isEmpty(params.get('pct_low')) ? 0 : parseInt(params.get('pct_low'));
     const pct_high = isEmpty(params.get('pct_high')) ? 100 : parseInt(params.get('pct_high'));
+
+    this.localSearchValue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
     this.state = {
-      searchvalue: '',
+      searchvalue: this.localSearchValue,
       rowsperpage: rowsperpage,
       pagenum: pagenum,
       congress: false,
@@ -264,11 +229,8 @@ class Members extends Component {
       totalvotes: { low: votes_low, high: votes_high },
       votepercent: { low: pct_low, high: pct_high },
     }
-
-    this.localSearchValue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
-    //this.localSearchValue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
-    this.onSearch = this.onSearch.bind(this); // for search button click
-    this.onChangeSearchValue = this.onChangeSearchValue.bind(this); // for search value input change
+    this.onSearch = this.onSearch.bind(this); // for search button clickonClickSearch
+    this.onClickSearch = this.onClickSearch.bind(this); // for search value input change
 
     this.onChangeCommitted = this.onChangeCommitted.bind(this); // for two slider bars
 
@@ -330,7 +292,12 @@ class Members extends Component {
     this.setState({ pagenum: 0 });
   }
 
-  onSearch(event) {
+  onClickSearch = value => event => {
+    this.localSearchValue = value;
+    this.onSearch();
+  }
+
+  onSearch() {
     // debugger
     this.setState({ searchvalue: this.localSearchValue });
     let searchurl = '';
@@ -367,17 +334,9 @@ class Members extends Component {
     addQuery('pct_high', data.votes_party_percentage.high, 0);
     // debugger
     this.props.history.push('/members/search?' + searchurl);
-    // this.props.location = '/members/search?' + searchurl;
     this.searchQuery();
   }
 
-  onChangeSearchValue(event) {
-    // debugger
-    if (event.target)
-      this.localSearchValue = event.target.value;
-    // this.setState({ searchvlaue: this.localSearchValue });
-    console.log(this.localSearchValue);
-  }
 
   //two value slider changed
   onChangeCommitted = index => (event, values) => {
@@ -500,22 +459,7 @@ class Members extends Component {
         ) : null}
         <Container maxWidth="xl">
           <CssBaseline />
-          <Paper className={classes.searchPaper}>
-            <div className={classes.searchContainer}>
-              <InputBase
-                fullWidth
-                className={classes.searchInput}
-                placeholder="Input Name"
-                inputProps={{ 'aria-label': 'Search' }}
-                onChange={this.onChangeSearchValue}
-                value={this.localSearchValue}
-              />
-            </div>
-            <IconButton className={classes.iconButton} aria-label="search" onClick={this.onSearch}>
-              <SearchIcon />
-            </IconButton>
-            {/* </form> */}
-          </Paper>
+          <CustomSearch initValue={this.state.searchvalue} onClickSearch={this.onClickSearch}></CustomSearch>
           <Paper className={classes.resultPaper}>
             <Grid container className={classes.searchResultsWrapper}>
               <Grid className={classes.searchTune} item row='true'>
