@@ -4,48 +4,32 @@ import React, { Component } from 'react'
 import { withStyles } from '@material-ui/styles';
 import { compose } from 'recompose';
 import { connect } from 'react-redux';
-import { withRouter } from 'react-router-dom';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { withRouter, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import CssBaseline from '@material-ui/core/CssBaseline';
 import Container from '@material-ui/core/Container';
-import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
-import Select from '@material-ui/core/Select';
 
 import Button from '@material-ui/core/Button';
 import InputBase from '@material-ui/core/InputBase';
 import IconButton from '@material-ui/core/IconButton';
 import SearchIcon from '@material-ui/icons/Search';
 import TablePagination from '@material-ui/core/TablePagination';
-import Divider from '@material-ui/core/Divider';
 import Checkbox from '@material-ui/core/Checkbox';
-import FormGroup from '@material-ui/core/FormGroup';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import FormControl from '@material-ui/core/FormControl';
-import ListSubheader from '@material-ui/core/ListSubheader';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Collapse from '@material-ui/core/Collapse';
-import InboxIcon from '@material-ui/icons/MoveToInbox';
-import DraftsIcon from '@material-ui/icons/Drafts';
-import SendIcon from '@material-ui/icons/Send';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
-import StarBorder from '@material-ui/icons/StarBorder';
 import Typography from '@material-ui/core/Typography';
 import ButtonBase from '@material-ui/core/ButtonBase';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import Link from '@material-ui/core/Link';
 
 import { searchMembers } from '../actions/members';
-import { FormLabel } from '@material-ui/core';
 import TwoValueSlider from './TwoValueSlider';
 import CustomTablePagination from './CustomTablePagination';
-import { callbackify } from 'util';
-import { borderBottom } from '@material-ui/system';
 import { isEmpty } from '../validation/is-empty';
 
 const styles = theme => ({
@@ -107,7 +91,7 @@ const styles = theme => ({
   resultPaper: {
     'margin-bottom': 0,
     // 'background-color': '#a6adbd',
-    padding: '15px 20px',
+    // padding: '15px 20px',
     'border-radius': 0,
     display: 'flex',
     justifyContent: 'space-between',
@@ -249,32 +233,45 @@ const styles = theme => ({
 class Members extends Component {
   constructor(props) {
     super(props)
+    // console.log(props);
+    const rowsList = [25, 50, 100, 250];
+    const params = new URLSearchParams(this.props.location.search);
+    const rowsperpage = (isEmpty(params.get('rows')) || rowsList.includes(params.get('rows')) === false) ? 25 : parseInt(params.get('rows'));
+    const pagenum = isEmpty(params.get('page')) ? 0 : parseInt(params.get('page'));
+    const congress = isEmpty(params.get('congress')) ? 116 : parseInt(params.get('congress'));
+    const chamber = isEmpty(params.get('chamber')) ? 'Senate' : params.get('chamber');
+    const pChks = isEmpty(params.get('pChks')) ? [] : params.get('pChks').split(',');
+    const yChks = isEmpty(params.get('yChks')) ? [] : params.get('yChks').split(',').map((value, index) => (parseInt(value)));
+    const gChks = isEmpty(params.get('gChks')) ? [] : params.get('gChks').split(',');
+    const votes_low = isEmpty(params.get('votes_low')) ? 0 : parseInt(params.get('votes_low'));
+    const votes_high = isEmpty(params.get('votes_high')) ? 1500 : parseInt(params.get('votes_high'));
+    const pct_low = isEmpty(params.get('pct_low')) ? 0 : parseInt(params.get('pct_low'));
+    const pct_high = isEmpty(params.get('pct_high')) ? 100 : parseInt(params.get('pct_high'));
     this.state = {
-      // isLoading: false,
       searchvalue: '',
-      rowsperpage: 25,
-      pagenum: 0,
+      rowsperpage: rowsperpage,
+      pagenum: pagenum,
       congress: false,
       chamber: true,
       party: true,
       yone: true,
       gender: true,
-      congressChecked: [116],
-      chamberChecked: ['Senate'],
-      partyChecked: [],
-      yoneChecked: [],
-      genderChecked: [],
-      totalvotes: { low: 0, high: 1500 },
-      votepercent: { low: 0, high: 100 },
+      congressChecked: [congress],
+      chamberChecked: [chamber],
+      partyChecked: pChks,
+      yoneChecked: yChks,
+      genderChecked: gChks,
+      totalvotes: { low: votes_low, high: votes_high },
+      votepercent: { low: pct_low, high: pct_high },
     }
 
-    this.localSearchValue = '';
+    this.localSearchValue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
+    //this.localSearchValue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
     this.onSearch = this.onSearch.bind(this); // for search button click
     this.onChangeSearchValue = this.onChangeSearchValue.bind(this); // for search value input change
 
     this.onChangeCommitted = this.onChangeCommitted.bind(this); // for two slider bars
 
-    // this.handleChange = this.handleChange.bind(this);   // 
     this.handleClickListExpand = this.handleClickListExpand.bind(this); //for filter list expand click
     this.handleCongressToggle = this.handleCongressToggle.bind(this); //for congress checkbox
     this.handleChamberToggle = this.handleChamberToggle.bind(this); //  ....
@@ -286,8 +283,38 @@ class Members extends Component {
     this.handleChangeRowsPerPage = this.handleChangeRowsPerPage.bind(this); //tablepagination handler for chaange page num
   }
 
+  searchQuery() {
+    // debugger
+    const rowsList = [25, 50, 100, 250];
+    const params = new URLSearchParams(this.props.history.location.search);
+    const rowsperpage = (isEmpty(params.get('rows')) || rowsList.includes(params.get('rows')) === false) ? 25 : parseInt(params.get('rows'));
+    const pagenum = isEmpty(params.get('page')) ? 0 : parseInt(params.get('page'));
+    const congress = isEmpty(params.get('congress')) ? 116 : parseInt(params.get('congress'));
+    const chamber = isEmpty(params.get('chamber')) ? 'Senate' : params.get('chamber');
+    const pChks = isEmpty(params.get('pChks')) ? [] : params.get('pChks').split(',');
+    const yChks = isEmpty(params.get('yChks')) ? [] : params.get('yChks').split(',').map((value, index) => (parseInt(value)));
+    const gChks = isEmpty(params.get('gChks')) ? [] : params.get('gChks').split(',');
+    const votes_low = isEmpty(params.get('votes_low')) ? 0 : parseInt(params.get('votes_low'));
+    const votes_high = isEmpty(params.get('votes_high')) ? 1500 : parseInt(params.get('votes_high'));
+    const pct_low = isEmpty(params.get('pct_low')) ? 0 : parseInt(params.get('pct_low'));
+    const pct_high = isEmpty(params.get('pct_high')) ? 100 : parseInt(params.get('pct_high'));
+
+    let searchvalue = isEmpty(params.get('searchvalue')) ? '' : params.get('searchvalue');
+
+    let data = {};
+    data.sessions = [congress];
+    data.chamber = [chamber];
+    data.searchValue = searchvalue;
+    data.party = pChks;
+    data.yone = yChks;
+    data.gender = gChks;
+    data.total_votes = { low: votes_low, high: votes_high };
+    data.votes_party_percentage = { low: pct_low, high: pct_high };
+    this.props.searchMembers(data);
+  }
+
   componentDidMount() {
-    this.onSearch();
+    this.searchQuery();
   }
 
   componentDidUpdate(prevProps) {
@@ -306,6 +333,19 @@ class Members extends Component {
   onSearch(event) {
     // debugger
     this.setState({ searchvalue: this.localSearchValue });
+    let searchurl = '';
+
+    function addQuery(field, value, isArray = 0) {
+      if (isEmpty(value)) return;
+      const mergeSymbol = isEmpty(searchurl) === true ? '' : '&';
+      if (isArray === 0)
+        searchurl = searchurl + mergeSymbol + `${field}=${value}`;
+      else {
+        let fieldvalue = value.join(',');
+        searchurl = searchurl + mergeSymbol + `${field}=${fieldvalue}`;
+      }
+    }
+
     let data = {};
     data.sessions = this.state.congressChecked;
     data.chamber = this.state.chamberChecked;
@@ -315,24 +355,42 @@ class Members extends Component {
     data.gender = this.state.genderChecked;
     data.total_votes = this.state.totalvotes;
     data.votes_party_percentage = this.state.votepercent;
-    this.props.searchMembers(data);
+    addQuery('congress', data.sessions, 1);
+    addQuery('chamber', data.chamber, 1);
+    addQuery('searchvalue', this.localSearchValue);
+    addQuery('pChks', data.party, 1);
+    addQuery('yChks', data.yone, 1);
+    addQuery('gChks', data.gender, 1);
+    addQuery('votes_low', data.total_votes.low, 0);
+    addQuery('votes_high', data.total_votes.high, 0);
+    addQuery('pct_low', data.votes_party_percentage.low, 0);
+    addQuery('pct_high', data.votes_party_percentage.high, 0);
+    // debugger
+    this.props.history.push('/members/search?' + searchurl);
+    // this.props.location = '/members/search?' + searchurl;
+    this.searchQuery();
   }
 
   onChangeSearchValue(event) {
     // debugger
-    if (event.currentTarget)
-      this.localSearchValue = event.currentTarget.value;
+    if (event.target)
+      this.localSearchValue = event.target.value;
+    // this.setState({ searchvlaue: this.localSearchValue });
+    console.log(this.localSearchValue);
   }
 
+  //two value slider changed
   onChangeCommitted = index => (event, values) => {
-    if (index === 1)
+    if (index === 1) {
       this.setState({ totalvotes: { low: values[0], high: values[1] } }, () => {
         this.onSearch(null);
       });
-    else if (index === 2)
+    }
+    else if (index === 2) {
       this.setState({ votepercent: { low: values[0], high: values[1] } }, () => {
         this.onSearch(null);
       });
+    }
   }
 
   handleCongressToggle = value => (event) => {
@@ -432,7 +490,7 @@ class Members extends Component {
       this.state.rowsperpage : this.props.members.count - this.state.pagenum * this.state.rowsperpage;
     if (!showCounts === true)
       showCounts = 0;
-    console.log(showCounts);
+    // console.log(showCounts);
     return (
       <div className={classes.root}>
         {this.props.members.loading ? (
@@ -443,16 +501,6 @@ class Members extends Component {
         <Container maxWidth="xl">
           <CssBaseline />
           <Paper className={classes.searchPaper}>
-            {/* <form className={classes.form} onSubmit={this.handleSubmit} noValidate> */}
-            {/* <Select
-              className={classes.searchFormat}
-              value={this.state.searchfield}
-              onChange={this.handleChange('searchfield')}
-            >
-              <MenuItem value={10}>Both</MenuItem>
-              <MenuItem value={20}>Senators</MenuItem>
-              <MenuItem value={30}>Representatives</MenuItem>
-            </Select> */}
             <div className={classes.searchContainer}>
               <InputBase
                 fullWidth
@@ -460,7 +508,7 @@ class Members extends Component {
                 placeholder="Input Name"
                 inputProps={{ 'aria-label': 'Search' }}
                 onChange={this.onChangeSearchValue}
-              // value={this.localSearchValue}
+                value={this.localSearchValue}
               />
             </div>
             <IconButton className={classes.iconButton} aria-label="search" onClick={this.onSearch}>
@@ -473,7 +521,7 @@ class Members extends Component {
               <Grid className={classes.searchTune} item row='true'>
                 {/* <Paper> */}
                 <Button variant="outlined" color="secondary" className={classes.button}>
-                  Hide Filters
+                  Filters
                 </Button>
                 <Grid className={classes.total_votes}>
                   <Typography variant="body2">total votes</Typography>
@@ -482,7 +530,7 @@ class Members extends Component {
                     aria-label="airbnb slider"
                     min={0}
                     max={1500}
-                    defaultValue={[0, 1500]}
+                    defaultValue={[this.state.totalvotes.low, this.state.totalvotes.high]}
                     onChangeCommitted={this.onChangeCommitted(1)}
                   />
                 </Grid>
@@ -494,7 +542,7 @@ class Members extends Component {
                     aria-label="airbnb slider"
                     min={0}
                     max={100}
-                    defaultValue={[0, 100]}
+                    defaultValue={[this.state.votepercent.low, this.state.votepercent.high]}
                     onChangeCommitted={this.onChangeCommitted(2)}
                   />
                 </Grid>
@@ -521,22 +569,26 @@ class Members extends Component {
                 <Grid container className={classes.searchColumnMain}>
                   <Grid className={classes.searchResultList}>
                     <Paper className={classes.paper}>
-                      {!this.props.members === true ? <></> :
+                      {(!this.props.members === true || showCounts <= 0) ? <></> :
                         [...Array(showCounts)].map((_, index) => (
                           // if (index >= this.state.pagenum * this.state.rowsperpage && index < (this.state.pagenum + 1) * this.state.rowsperpage && index < this.props.members.count) {
                           < Grid container gutterbottom='true' className={classes.record} key={index}>
                             <Grid item>
-                              <Typography variant="subtitle1">
-                                {this.state.pagenum * this.state.rowsperpage + index + 1}. {'  '}
-                                {resultRecords[this.state.pagenum * this.state.rowsperpage + index].first_name} {' '}
-                                {resultRecords[this.state.pagenum * this.state.rowsperpage + index].middle_name} {resultRecords[this.state.pagenum * this.state.rowsperpage + index].last_name}
-                              </Typography>
+                              <Link to={{ pathname: 'profile', search: `?id=${resultRecords[this.state.pagenum * this.state.rowsperpage + index].id}` }}>
+                                <Typography variant="subtitle1">
+                                  {this.state.pagenum * this.state.rowsperpage + index + 1}. {'  '}
+                                  {resultRecords[this.state.pagenum * this.state.rowsperpage + index].first_name} {' '}
+                                  {resultRecords[this.state.pagenum * this.state.rowsperpage + index].middle_name} {resultRecords[this.state.pagenum * this.state.rowsperpage + index].last_name}
+                                </Typography>
+                              </Link>
                             </Grid>
                             <Grid container>
                               <Grid item>
-                                <ButtonBase className={classes.avatar}>
-                                  {this.makeAvatarString(index)}
-                                </ButtonBase>
+                                <Link to={{ pathname: 'profile', search: `?id=${resultRecords[this.state.pagenum * this.state.rowsperpage + index].id}` }}>
+                                  <ButtonBase className={classes.avatar}>
+                                    {this.makeAvatarString(index)}
+                                  </ButtonBase>
+                                </Link>
                               </Grid>
                               <Grid item xs={12} sm container className={classes.recordgriditem} >
                                 <Grid item xs container direction="column">
@@ -556,13 +608,13 @@ class Members extends Component {
                                       <b>Next Election:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].next_election}
                                     </Typography>
                                     <Typography variant="body2">
-                                      <b>Twitter:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}</Link>
+                                      <b>Twitter:</b> <a target="_blank" href={`https://twitter.com/${resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}`}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}</a>
                                     </Typography>
                                     <Typography variant="body2">
-                                      <b>Facebook:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}</Link>
+                                      <b>Facebook:</b> <a target="_blank" href={`https://facebook.com/${resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}`}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].facebook_account}</a>
                                     </Typography>
                                     <Typography variant="body2">
-                                      <b>Youtube:</b> <Link to={resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}</Link>
+                                      <b>Youtube:</b> <a target="_blank" href={`https://youtube.com/user/${resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}`}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].youtube_account}</a>
                                     </Typography>
                                     <Typography variant="body2" style={{ cursor: 'pointer' }}>
                                       <b>Office:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].office}
@@ -577,35 +629,30 @@ class Members extends Component {
                         )}
                     </Paper>
                   </Grid>
-                  <Grid className={classes.navPageTop}>
-                    <TablePagination
-                      key={2}
-                      rowsPerPageOptions={[25, 50, 100, 250]}
-                      colSpan={3}
-                      count={!this.props.members.count === true ? 0 : this.props.members.count}
-                      rowsPerPage={this.state.rowsperpage}
-                      page={this.state.pagenum}
-                      SelectProps={{
-                        inputProps: { 'aria-label': 'rows per page' },
-                        native: true,
-                      }}
-                      onChangePage={this.handleChangePage}
-                      onChangeRowsPerPage={this.handleChangeRowsPerPage}
-                      ActionsComponent={CustomTablePagination}
-                    />
-                  </Grid>
+                  {/* <Grid className={classes.navPageTop}> */}
+                  <TablePagination
+                    key={2}
+                    rowsPerPageOptions={[25, 50, 100, 250]}
+                    colSpan={3}
+                    count={!this.props.members.count === true ? 0 : this.props.members.count}
+                    rowsPerPage={this.state.rowsperpage}
+                    page={this.state.pagenum}
+                    component="div"
+                    SelectProps={{
+                      inputProps: { 'aria-label': 'rows per page' },
+                      native: true,
+                    }}
+                    onChangePage={this.handleChangePage}
+                    onChangeRowsPerPage={this.handleChangeRowsPerPage}
+                    ActionsComponent={CustomTablePagination}
+                  />
+                  {/* </Grid> */}
                 </Grid>
                 <Grid className={classes.searchColumnNav} column='true'>
                   <List
                     component="nav"
                     aria-labelledby="filter list"
                     disablePadding
-                  //             subheader={
-                  //               <ListSubheader component="div" id="nested-list-subheader">
-                  //                 Nested List Items
-                  // </ListSubheader>
-                  //             }
-                  // className={classes.root}
                   >
                     <ListItem button onClick={this.handleClickListExpand('congress')} aria-labelledby="congress listitem button" >
                       <ListItemText secondary="Congress" aria-labelledby="filter congress-button listitemtext" classes={{ secondary: classes.filter_button_listitemtext }} />

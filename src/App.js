@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { Provider } from 'react-redux'
 import { ThemeProvider } from '@material-ui/styles';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { createMuiTheme } from '@material-ui/core';
 import './App.css';
 import Banner from './components/Banner'
 import Members from './components/Members';
+import Profile from './components/Profile';
 import store from './store';
 
 // you should feel free to reorganize the code however you see fit
@@ -40,7 +41,13 @@ class App extends Component {
         <Provider store={store}>
           <Banner />
           <Router>
-            <Route exact path="/" component={Members} />
+            <Switch>
+              <Route exact path="/members/search" component={Members} />
+              <Route exact path="/members/profile" component={Profile} />
+              <Route exact path="/">
+                <Redirect to="/members/search" />
+              </Route>
+            </Switch>
           </Router>
         </Provider>
       </ThemeProvider >

@@ -1,14 +1,29 @@
 // actions/members.js
 
-import axios from 'axios';
 import { READ_MEMBERS_REQUEST, READ_MEMBERS_SUCCESS, READ_MEMBERS_FAILED, READ_PROFILE_REQUEST, READ_PROFILE_SUCCESS, READ_PROFILE_FAILED } from './types';
 import { isEmpty } from '../validation/is-empty'
 
 const fetchMembers = (data) => {
+  const intervalMinutes = 5;
   // debugger
   const session = isEmpty(data.session) ? 116 : data.session; // 116th congressional session
   const chamber = isEmpty(data.chamber) ? 'senate' : data.chamber; // or 'house'
   // axios.defaults.headers.common['X-API-Key'] = 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr';
+
+  // localStorage
+  let curDate = Date.now();
+  const record_name = `members_${session}_${chamber.toLowerCase()}`;
+  if (record_name in localStorage) {
+    const data = JSON.parse(localStorage[record_name]);
+    console.log(curDate - data.update);
+    if (curDate - data.update < 1000 * 60 * intervalMinutes) {
+      console.log('from localStorage');
+      return new Promise((resolve, reject) => {
+        resolve({ payload: data.payload })
+      });
+    }
+  }
+
   return fetch(`https://api.propublica.org/congress/v1/${session}/${chamber}/members.json`, {
     headers: new Headers({
       'X-API-Key': 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr',
@@ -16,9 +31,12 @@ const fetchMembers = (data) => {
   })
     .then(res => {
       // debugger
+      console.log('from server');
       return res.json();
     })
     .then(json => {
+      curDate = Date.now();
+      localStorage.setItem(record_name, JSON.stringify({ update: curDate, payload: json.results[0].members }));
       return { payload: json.results[0].members };
     })
   // .then(res => res.json())
@@ -34,6 +52,7 @@ export const fetchProfile = (data) => dispatch => {
   dispatch({
     type: READ_PROFILE_REQUEST
   });
+
   fetch(`https://api.propublica.org/congress/v1/members/${member_id}.json`, {
     headers: new Headers({
       'X-API-Key': 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr',
@@ -66,8 +85,8 @@ export const fetchProfile = (data) => dispatch => {
 
 export const searchMembers = (data) => dispatch => {
   // debugger
-  const sessions = isEmpty(data.sessions) ? [] : data.sessions;  //congressional sessions array, []: all
-  const chamber = isEmpty(data.chamber) ? ['house', 'senate'] : data.chamber; //chamber array
+  const sessions = isEmpty(data.sessions) ? [116] : data.sessions;  //congressional sessions array, []: all
+  const chamber = isEmpty(data.chamber) ? ['senate'] : data.chamber; //chamber array
   // const searchField = isEmpty(data.searchFiled) ? ['both'] : data.searchField; //search field array
   const searchValue = isEmpty(data.searchValue) ? '' : data.searchValue;  //search value
   const party = isEmpty(data.party) ? [] : [...data.party];  //parties array, []: all ex: ['R','D','I', 'ID']  I:Independant Democrat, ID:Independant
@@ -97,7 +116,7 @@ export const searchMembers = (data) => dispatch => {
   fetchMembers({ session: sessions[0], chamber: chamber[0] })
     .then(ret => {
       const results = ret.payload;
-      console.log(results.length);
+      // console.log(results.length);
       let filteredResults = results.filter(function (item) {
         let name = item.first_name + ' ' + item.middle_name + ' ' + item.last_name;
         name = name.trim();
@@ -115,7 +134,7 @@ export const searchMembers = (data) => dispatch => {
           return false;
         }
       });
-      console.log(filteredResults.length);
+      // console.log(filteredResults.length);
       dispatch({
         type: READ_MEMBERS_SUCCESS,
         payload: filteredResults

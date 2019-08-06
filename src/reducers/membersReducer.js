@@ -1,7 +1,6 @@
 // reducers/membersReducer.js
 
 import { READ_MEMBERS_REQUEST, READ_MEMBERS_SUCCESS, READ_MEMBERS_FAILED } from '../actions/types';
-import { isEmpty } from '../validation/is-empty';
 
 const initialState = {
   loading: false,
