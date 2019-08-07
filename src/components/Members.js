@@ -23,12 +23,16 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import Typography from '@material-ui/core/Typography';
 import ButtonBase from '@material-ui/core/ButtonBase';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Radio from '@material-ui/core/Radio';
+import { RadioGroup } from '@material-ui/core';
+
 
 import { searchMembers } from '../actions/members';
 import TwoValueSlider from './TwoValueSlider';
 import CustomTablePagination from './CustomTablePagination';
 import { isEmpty } from '../validation/is-empty';
 import CustomSearch from './CustomSearch';
+import { makeFullPartyName } from '../global';
 const styles = theme => ({
   root: {
     'font-size': '12px',
@@ -36,9 +40,10 @@ const styles = theme => ({
     'background-color': '#f7f7f7'
   },
   loading: {
-    position: 'absolute',
+    position: 'fixed',
     width: '100%',
-    height: '100%',
+    top: 0,
+    bottom: 0,
     background: '#0005',
     zIndex: 999,
     display: 'flex',
@@ -48,17 +53,6 @@ const styles = theme => ({
   container: {
     maxWidth: 'xl'
   },
-  // form: {
-  //   width: '100%', // Fix IE 11 issue.
-  //   // marginTop: theme.spacing(1),
-  // // },
-  // searchFormat: {
-  //   'font-size': 12,
-  //   'background-color': '#fff',
-  //   padding: 5,
-  //   border: '3px solid #1b4b6f',
-  //   width: '18%'
-  // },
   resultPaper: {
     'margin-bottom': 0,
     // 'background-color': '#a6adbd',
@@ -71,11 +65,6 @@ const styles = theme => ({
     'box-sizing': 'border-box',
     'overflow': 'auto'
   },
-  // formControl: {
-  //   borderRadius: 4,
-  //   border: '1px solid #ced4da',
-  //   'font-size': '12px'
-  // },
   searchTune: {
     width: '100%',
     'align-items': 'center',
@@ -186,7 +175,8 @@ const styles = theme => ({
     'font-weight': '400',
   },
   record: {
-    'margin': '10px',
+    padding: '20px',
+    borderBottom: '1px solid #8e8e8e8e',
   },
   recordgriditem: {
     'margin-left': '30px'
@@ -333,6 +323,7 @@ class Members extends Component {
     addQuery('pct_low', data.votes_party_percentage.low, 0);
     addQuery('pct_high', data.votes_party_percentage.high, 0);
     // debugger
+    this.setState({ pagenum: 0 });
     this.props.history.push('/members/search?' + searchurl);
     this.searchQuery();
   }
@@ -353,29 +344,33 @@ class Members extends Component {
   }
 
   handleCongressToggle = value => (event) => {
-    const currentIndex = this.state.congressChecked.indexOf(value);
-    const newChecked = [...this.state.congressChecked];
+    // const currentIndex = this.state.congressChecked.indexOf(value);
+    // const newChecked = [...this.state.congressChecked];
 
-    if (currentIndex === -1) {
-      newChecked[0] = value;
-      // newChecked.push(value);
-    } else {
-      newChecked.splice(currentIndex, 1);
-    }
+    // if (currentIndex === -1) {
+    //   newChecked[0] = value;
+    //   // newChecked.push(value);
+    // } else {
+    //   newChecked.splice(currentIndex, 1);
+    // }
+    let newChecked = [value];
+    if (value === this.state.congressChecked[0]) return;
     this.setState({ congressChecked: newChecked }, () => {
       this.onSearch(null);
     });
   }
 
   handleChamberToggle = value => (event) => {
-    const currentIndex = this.state.chamberChecked.indexOf(value);
-    const newChecked = [...this.state.chamberChecked];
-    if (currentIndex === -1) {
-      newChecked[0] = value;
-      // newChecked.push(value);
-    } else {
-      newChecked.splice(currentIndex, 1);
-    }
+    // const currentIndex = this.state.chamberChecked.indexOf(value);
+    // const newChecked = [...this.state.chamberChecked];
+    // if (currentIndex === -1) {
+    //   newChecked[0] = value;
+    //   // newChecked.push(value);
+    // } else {
+    //   newChecked.splice(currentIndex, 1);
+    // }
+    let newChecked = [value];
+    if (value === this.state.chamberChecked[0]) return;
     this.setState({ chamberChecked: newChecked }, () => {
       this.onSearch(null);
     });
@@ -454,10 +449,10 @@ class Members extends Component {
       <div className={classes.root}>
         {this.props.members.loading ? (
           <div className={classes.loading}>
-            <CircularProgress color="secondary" size={60} thickness={10} />
+            <CircularProgress color="primary" size={60} thickness={5} />
           </div>
         ) : null}
-        <Container maxWidth="xl">
+        <Container className={classes.container}>
           <CssBaseline />
           <CustomSearch initValue={this.state.searchvalue} onClickSearch={this.onClickSearch}></CustomSearch>
           <Paper className={classes.resultPaper}>
@@ -535,8 +530,8 @@ class Members extends Component {
                                 </Link>
                               </Grid>
                               <Grid item xs={12} sm container className={classes.recordgriditem} >
-                                <Grid item xs container direction="column">
-                                  <Grid item xs>
+                                <Grid xs item container direction="row">
+                                  <Grid item style={{ flex: 1 }}>
                                     <Typography variant="body2">
                                       <b>State:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].state}
                                     </Typography>
@@ -546,11 +541,19 @@ class Members extends Component {
                                       </Typography>
                                     }
                                     <Typography variant="body2">
-                                      <b>Party:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].party}
+                                      <b>Party:</b> {makeFullPartyName(resultRecords[this.state.pagenum * this.state.rowsperpage + index].party)}
                                     </Typography>
                                     <Typography variant="body2">
                                       <b>Next Election:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].next_election}
                                     </Typography>
+                                    <Typography variant="body2">
+                                      <b>Total votes:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].total_votes}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      <b>Votes with party pct:</b> {resultRecords[this.state.pagenum * this.state.rowsperpage + index].votes_with_party_pct}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item style={{ flex: 1 }}>
                                     <Typography variant="body2">
                                       <b>Twitter:</b> <a target="_blank" href={`https://twitter.com/${resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}`}>{resultRecords[this.state.pagenum * this.state.rowsperpage + index].twitter_account}</a>
                                     </Typography>
@@ -571,6 +574,11 @@ class Members extends Component {
                           // }
                         )
                         )}
+                      {(showCounts < 3) ?
+                        < Grid container gutterbottom='true' className={classes.record} style={{ height: (3 - showCounts) * 200 }}>
+                        </Grid>
+                        : <></>
+                      }
                     </Paper>
                   </Grid>
                   {/* <Grid className={classes.navPageTop}> */}
@@ -604,23 +612,26 @@ class Members extends Component {
                     </ListItem>
                     <Collapse in={this.state.congress} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        {[...Array(36)].map((_, index) => (
-                          <ListItem button
-                            key={116 - index} role={undefined}
-                            onClick={this.handleCongressToggle(116 - index)}
-                            className={classes.filter_collapse_list_listitem}
-                          >
-                            <Checkbox
-                              edge="start"
-                              checked={this.state.congressChecked.includes(116 - index) !== false}
-                              tabIndex={-1}
-                              className={classes.filter_collapse_list_checkbox}
-                            />
-                            {/* </ListItemIcon> */}
-                            <ListItemText id={index} primary={`${116 - index} (${2019 - index * 2}-${2020 - index * 2})`} classes={{ primary: classes.filter_checkbox_label }} />
-                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
-                          </ListItem>
-                        ))}
+                        <RadioGroup
+                          value={this.state.congressChecked[0].toString()}>
+                          {[...Array(36)].map((_, index) => (
+                            <ListItem button
+                              key={116 - index} role={undefined}
+                              onClick={this.handleCongressToggle(116 - index)}
+                              className={classes.filter_collapse_list_listitem}
+                            >
+                              <Radio
+                                edge="start"
+                                // checked={this.state.congressChecked.includes(116 - index) !== false}
+                                value={(116 - index).toString()}
+                                tabIndex={-1}
+                                className={classes.filter_collapse_list_checkbox}
+                              />
+                              <ListItemText id={index} primary={`${116 - index} (${2019 - index * 2}-${2020 - index * 2})`} classes={{ primary: classes.filter_checkbox_label }} />
+                              {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                            </ListItem>
+                          ))}
+                        </RadioGroup>
                       </List>
                     </Collapse>
 
@@ -630,24 +641,28 @@ class Members extends Component {
                     </ListItem>
                     <Collapse in={this.state.chamber} timeout="auto" unmountOnExit>
                       <List component="div" disablePadding>
-                        {['Senate', 'House'].map((value, index) => (
-                          <ListItem button
-                            key={value} role={undefined}
-                            onClick={this.handleChamberToggle(value)}
-                            className={classes.filter_collapse_list_listitem}
-                          >
-                            {/* <ListItemIcon> */}
-                            <Checkbox
-                              edge="start"
-                              checked={this.state.chamberChecked.includes(value) !== false}
-                              tabIndex={-1}
-                              className={classes.filter_collapse_list_checkbox}
-                            />
-                            {/* </ListItemIcon> */}
-                            <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
-                            {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
-                          </ListItem>
-                        ))}
+                        <RadioGroup
+                          value={this.state.chamberChecked[0]}>
+                          {['Senate', 'House'].map((value, index) => (
+                            <ListItem button
+                              key={value} role={undefined}
+                              onClick={this.handleChamberToggle(value)}
+                              className={classes.filter_collapse_list_listitem}
+                            >
+                              {/* <ListItemIcon> */}
+                              <Radio
+                                edge="start"
+                                // checked={this.state.chamberChecked.includes(value) !== false}
+                                value={value}
+                                tabIndex={-1}
+                                className={classes.filter_collapse_list_checkbox}
+                              />
+                              {/* </ListItemIcon> */}
+                              <ListItemText id={index} primary={value} classes={{ primary: classes.filter_checkbox_label }} />
+                              {/* <ListItemText id='2' primary={`[100]`} classes={{ primary: classes.congress_filtercount }} /> */}
+                            </ListItem>
+                          ))}
+                        </RadioGroup>
                       </List>
                     </Collapse>
 

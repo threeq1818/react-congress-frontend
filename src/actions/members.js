@@ -2,9 +2,9 @@
 
 import { READ_MEMBERS_REQUEST, READ_MEMBERS_SUCCESS, READ_MEMBERS_FAILED, READ_PROFILE_REQUEST, READ_PROFILE_SUCCESS, READ_PROFILE_FAILED } from './types';
 import { isEmpty } from '../validation/is-empty'
+import { RELOAD_INTERVAL, API_HOST, API_KEY } from '../config';
 
 const fetchMembers = (data) => {
-  const intervalMinutes = 5;
   // debugger
   const session = isEmpty(data.session) ? 116 : data.session; // 116th congressional session
   const chamber = isEmpty(data.chamber) ? 'senate' : data.chamber; // or 'house'
@@ -15,23 +15,23 @@ const fetchMembers = (data) => {
   const record_name = `members_${session}_${chamber.toLowerCase()}`;
   if (record_name in localStorage) {
     const data = JSON.parse(localStorage[record_name]);
-    console.log(curDate - data.update);
-    if (curDate - data.update < 1000 * 60 * intervalMinutes) {
-      console.log('from localStorage');
+    // console.log(curDate - data.update);
+    if (curDate - data.update < 1000 * 60 * RELOAD_INTERVAL) {
+      // console.log('from localStorage');
       return new Promise((resolve, reject) => {
         resolve({ payload: data.payload })
       });
     }
   }
 
-  return fetch(`https://api.propublica.org/congress/v1/${session}/${chamber}/members.json`, {
+  return fetch(`${API_HOST}/v1/${session}/${chamber}/members.json`, {
     headers: new Headers({
-      'X-API-Key': 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr',
+      'X-API-Key': API_KEY,
     }),
   })
     .then(res => {
       // debugger
-      console.log('from server');
+      // console.log('from server');
       return res.json();
     })
     .then(json => {
@@ -53,20 +53,40 @@ export const fetchProfile = (data) => dispatch => {
     type: READ_PROFILE_REQUEST
   });
 
-  fetch(`https://api.propublica.org/congress/v1/members/${member_id}.json`, {
+
+  // localStorage
+  let curDate = Date.now();
+  const profile_name = `profile_${member_id.toLowerCase()}`;
+  if (profile_name in localStorage) {
+    const profile = JSON.parse(localStorage[profile_name]);
+    // console.log(curDate - profile.update);
+    if (curDate - profile.update < 1000 * 60 * RELOAD_INTERVAL) {
+      // console.log('from localStorage');
+      dispatch({
+        type: READ_PROFILE_SUCCESS,
+        payload: profile.payload
+      });
+      return;
+    }
+  }
+
+  fetch(`${API_HOST}/v1/members/${member_id}.json`, {
     headers: new Headers({
-      'X-API-Key': 'd0ywBucVrXRlMQhENZxRtL3O7NPgtou2mwnLARTr',
+      'X-API-Key': API_KEY,
     }),
   })
     .then(res => {
       return res.json();
     })
     .then(json => {
-      if (json.status.toUpperCase() === 'OK')
+      if (json.status.toUpperCase() === 'OK') {
+        curDate = Date.now();
+        localStorage.setItem(profile_name, JSON.stringify({ update: curDate, payload: json.results[0] }));
         dispatch({
           type: READ_PROFILE_SUCCESS,
           payload: json.results[0]
         });
+      }
       else
         dispatch({
           type: READ_PROFILE_FAILED,
@@ -123,9 +143,9 @@ export const searchMembers = (data) => dispatch => {
         // debugger
         if (
           (searchValue !== '' ? name.toLowerCase().indexOf(searchValue.toLowerCase()) >= 0 : true) &&
-          (item.party === undefined || item.party === null || party.length === 0 ? true : party.includes(item.party.toUpperCase())) &&
-          (item.next_election === undefined || item.next_election === null || yone.length === 0 ? true : yone.includes(Number(item.next_election))) &&
-          (item.gender === undefined || item.gender === null || gender.length === 0 ? true : gender.includes(item.gender.toUpperCase())) &&
+          (/*item.party === undefined || item.party === null ||*/ party.length === 0 ? true : party.includes(item.party.toUpperCase())) &&
+          (/*item.next_election === undefined || item.next_election === null || */yone.length === 0 ? true : yone.includes(Number(item.next_election))) &&
+          (/*item.gender === undefined || item.gender === null ||*/ gender.length === 0 ? true : gender.includes(item.gender.toUpperCase())) &&
           (item.total_votes === undefined || item.total_votes === null || (item.total_votes >= total_votes.low && (total_votes.high === 1500 ? true : item.total_votes <= total_votes.high))) &&
           (item.votes_with_party_pct === undefined || item.votes_with_party_pct === null || (item.votes_with_party_pct >= votes_party_percentage.low && item.votes_with_party_pct <= votes_party_percentage.high))
         )

@@ -11,6 +11,7 @@ import Typography from '@material-ui/core/Typography';
 import ButtonBase from '@material-ui/core/ButtonBase';
 import { fetchProfile } from '../actions/members';
 import { isEmpty } from '../validation/is-empty';
+import { makeFullPartyName } from '../global';
 
 const styles = theme => ({
   root: {
@@ -19,9 +20,10 @@ const styles = theme => ({
     'background-color': '#f7f7f7'
   },
   loading: {
-    position: 'absolute',
+    position: 'fixed',
     width: '100%',
-    height: '100%',
+    top: 0,
+    bottom: 0,
     background: '#0005',
     zIndex: 999,
     display: 'flex',
@@ -147,7 +149,7 @@ class Profile extends Component {
                         }
                         {(!profile.current_party === true) ? <></> :
                           <Typography variant="body2">
-                            <b>Party:</b> {profile.current_party}
+                            <b>Party:</b> {makeFullPartyName(profile.current_party)}
                           </Typography>
                         }
                         {(!profile.gender === true) ? <></> :
@@ -210,7 +212,7 @@ class Profile extends Component {
                               <Typography variant='subtitle1' style={{ fontWeight: 600 }}>Committees/Subcommittees </Typography>
                             </Grid>
                             <Grid>
-                              <Table className={classes.table} size="small">
+                              <Table className={classes.table} padding='none'>
                                 <TableHead>
                                   <TableRow>
                                     <TableCell>Name</TableCell>
@@ -222,7 +224,7 @@ class Profile extends Component {
                                 <TableBody >
                                   {!role.committees === true ? <></> : role.committees.map((committee, index) => (
                                     <TableRow key={index}>
-                                      <TableCell component="th" scope="row" >
+                                      <TableCell component="th" scope="row">
                                         {committee.name}
                                       </TableCell>
                                       <TableCell align="right" >{committee.code}</TableCell>

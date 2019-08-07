@@ -36,7 +36,9 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+let timer = null;
 function CustomSearch(props) {
+
   const classes = useStyles();
   const theme = useTheme();
   const [value, setValue] = useState(props.initValue);
@@ -45,6 +47,13 @@ function CustomSearch(props) {
     if (e.target) {
       setValue(e.target.value);
     }
+
+    const searchString = e.target.value;
+    if (timer) {
+      clearTimeout(timer);
+    }
+
+    timer = setTimeout(props.onClickSearch(searchString), 750)
   }
 
   return (
@@ -52,6 +61,7 @@ function CustomSearch(props) {
       <div className={classes.searchContainer}>
         <InputBase
           fullWidth
+          autoFocus
           className={classes.searchInput}
           placeholder="Input Name"
           inputProps={{ 'aria-label': 'Search' }}
